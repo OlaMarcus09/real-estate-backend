@@ -10,9 +10,48 @@
       "start_date": null,
       "end_date": null,
       "created_at": "2025-10-23T00:49:06.325Z"
+    },
+    {
+      "id": 2,
+      "name": "Test Project",
+      "budget": 100000,
+      "status": "Planning",
+      "spent": 0,
+      "progress_percent": 0,
+      "start_date": null,
+      "end_date": null,
+      "created_at": "2025-10-23T01:50:37.074Z"
+    },
+    {
+      "id": 3,
+      "name": "Downtown Apartment Complex",
+      "budget": 750000,
+      "status": "Active",
+      "spent": 0,
+      "progress_percent": 0,
+      "start_date": null,
+      "end_date": null,
+      "created_at": "2025-10-23T02:03:51.134Z"
     }
   ],
-  "workers": [],
+  "workers": [
+    {
+      "id": 1,
+      "name": "John Doe",
+      "role": "Contractor",
+      "hourly_rate": 45,
+      "contact": "",
+      "created_at": "2025-10-23T01:51:07.454Z"
+    },
+    {
+      "id": 2,
+      "name": "Maria Rodriguez",
+      "role": "General Contractor",
+      "hourly_rate": 65,
+      "contact": "maria@construction.com",
+      "created_at": "2025-10-23T02:04:32.008Z"
+    }
+  ],
   "vendors": [],
   "expenses": [],
   "inventory_items": [],
