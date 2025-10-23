@@ -1,26 +1,37 @@
 import express from 'express';
+import { loadDB, saveDB, getNextId } from '../config/database.js';
+
 const router = express.Router();
 
 // GET all vendors
-router.get('/', async (req, res) => {
+router.get('/', (req, res) => {
   try {
-    const vendors = await req.db.all('SELECT * FROM vendors ORDER BY created_at DESC');
-    res.json(vendors);
+    const data = loadDB();
+    res.json(data.vendors || []);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // POST new vendor
-router.post('/', async (req, res) => {
+router.post('/', (req, res) => {
   try {
     const { name, category, contact, rating } = req.body;
-    const result = await req.db.run(
-      'INSERT INTO vendors (name, category, contact, rating) VALUES (?, ?, ?, ?)',
-      [name, category, contact, rating || 5]
-    );
-    const vendor = await req.db.get('SELECT * FROM vendors WHERE id = ?', [result.lastID]);
-    res.status(201).json(vendor);
+    const data = loadDB();
+    
+    const newVendor = {
+      id: getNextId(data, 'vendors'),
+      name,
+      category: category || '',
+      contact: contact || '',
+      rating: parseInt(rating) || 5,
+      created_at: new Date().toISOString()
+    };
+    
+    data.vendors.push(newVendor);
+    saveDB(data);
+    
+    res.status(201).json(newVendor);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

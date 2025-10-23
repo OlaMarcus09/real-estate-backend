@@ -1,0 +1,20 @@
+{
+  "projects": [
+    {
+      "id": 1,
+      "name": "Sample Real Estate Project",
+      "status": "Active",
+      "budget": 500000,
+      "spent": 0,
+      "progress_percent": 25,
+      "start_date": null,
+      "end_date": null,
+      "created_at": "2025-10-23T00:49:06.325Z"
+    }
+  ],
+  "workers": [],
+  "vendors": [],
+  "expenses": [],
+  "inventory_items": [],
+  "project_workers": []
+}

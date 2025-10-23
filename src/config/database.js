@@ -1,102 +1,85 @@
-import sqlite3 from 'sqlite3';
-import { open } from 'sqlite';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export let db;
+// Use different database path for production
+const dbPath = process.env.NODE_ENV === 'production' 
+  ? '/tmp/data.json'
+  : './data.json';
 
-export const initDB = async () => {
+// Default data structure
+const defaultData = {
+  projects: [
+    {
+      id: 1,
+      name: "Sample Real Estate Project",
+      status: "Active",
+      budget: 500000,
+      spent: 0,
+      progress_percent: 25,
+      start_date: null,
+      end_date: null,
+      created_at: new Date().toISOString()
+    }
+  ],
+  workers: [],
+  vendors: [],
+  expenses: [],
+  inventory_items: [],
+  project_workers: []
+};
+
+// Initialize database
+export const initDB = () => {
   try {
-    // Use different database path for production (Railway has ephemeral storage)
-    const dbPath = process.env.NODE_ENV === 'production' 
-      ? '/tmp/real_estate.db'  // Railway ephemeral storage
-      : './real_estate.db';    // Local development
-    
     console.log(`📁 Using database path: ${dbPath}`);
     
-    db = await open({
-      filename: dbPath,
-      driver: sqlite3.Database
-    });
-
-    await db.exec(`
-      CREATE TABLE IF NOT EXISTS projects (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        status TEXT DEFAULT 'Planning',
-        budget REAL DEFAULT 0,
-        spent REAL DEFAULT 0,
-        progress_percent INTEGER DEFAULT 0,
-        start_date TEXT,
-        end_date TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS workers (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        role TEXT NOT NULL,
-        hourly_rate REAL NOT NULL,
-        contact TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS project_workers (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        project_id INTEGER,
-        worker_id INTEGER,
-        hours_worked REAL DEFAULT 0,
-        assigned_rate REAL NOT NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS vendors (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        category TEXT,
-        contact TEXT,
-        rating INTEGER DEFAULT 5,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS expenses (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        project_id INTEGER,
-        vendor_id INTEGER,
-        category TEXT NOT NULL,
-        amount REAL NOT NULL,
-        date TEXT DEFAULT CURRENT_DATE,
-        notes TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-
-      CREATE TABLE IF NOT EXISTS inventory_items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        unit TEXT NOT NULL,
-        stock_qty REAL DEFAULT 0,
-        cost_per_unit REAL NOT NULL,
-        project_id INTEGER,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      );
-    `);
-
-    console.log('✅ Database initialized successfully');
-    
-    // Add sample data only if no projects exist
-    const projectCount = await db.get('SELECT COUNT(*) as count FROM projects');
-    if (projectCount.count === 0) {
-      await db.run(
-        'INSERT INTO projects (name, budget, status, progress_percent) VALUES (?, ?, ?, ?)',
-        ['Sample Real Estate Project', 500000, 'Active', 25]
-      );
-      console.log('✅ Sample project added');
+    // Check if database file exists
+    if (!fs.existsSync(dbPath)) {
+      console.log('🆕 Creating new database file...');
+      saveDB(defaultData);
+      console.log('✅ Database initialized with sample data');
+    } else {
+      console.log('✅ Existing database loaded');
     }
+    
+    return loadDB();
   } catch (err) {
     console.error('❌ Database initialization error:', err);
-    throw err; // Re-throw to fail deployment if DB fails
+    // Return default data if there's an error
+    return defaultData;
   }
+};
+
+// Load database from file
+export const loadDB = () => {
+  try {
+    if (fs.existsSync(dbPath)) {
+      const data = fs.readFileSync(dbPath, 'utf8');
+      return JSON.parse(data);
+    }
+    return defaultData;
+  } catch (err) {
+    console.error('❌ Error loading database:', err);
+    return defaultData;
+  }
+};
+
+// Save database to file
+export const saveDB = (data) => {
+  try {
+    fs.writeFileSync(dbPath, JSON.stringify(data, null, 2));
+  } catch (err) {
+    console.error('❌ Error saving database:', err);
+  }
+};
+
+// Helper function to get next ID for any table
+export const getNextId = (data, tableName) => {
+  const items = data[tableName] || [];
+  if (items.length === 0) return 1;
+  return Math.max(...items.map(item => item.id)) + 1;
 };

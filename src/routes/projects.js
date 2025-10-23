@@ -1,21 +1,24 @@
 import express from 'express';
+import { loadDB, saveDB, getNextId } from '../config/database.js';
+
 const router = express.Router();
 
 // GET all projects
-router.get('/', async (req, res) => {
+router.get('/', (req, res) => {
   try {
-    const projects = await req.db.all('SELECT * FROM projects ORDER BY created_at DESC');
-    res.json(projects);
+    const data = loadDB();
+    res.json(data.projects || []);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // GET single project
-router.get('/:id', async (req, res) => {
+router.get('/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const project = await req.db.get('SELECT * FROM projects WHERE id = ?', [id]);
+    const data = loadDB();
+    const project = data.projects.find(p => p.id === parseInt(id));
     
     if (!project) {
       return res.status(404).json({ error: 'Project not found' });
@@ -28,32 +31,46 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST new project
-router.post('/', async (req, res) => {
+router.post('/', (req, res) => {
   try {
     const { name, budget, start_date, status } = req.body;
-    const result = await req.db.run(
-      'INSERT INTO projects (name, budget, start_date, status) VALUES (?, ?, ?, ?)',
-      [name, budget, start_date, status || 'Planning']
-    );
-    const project = await req.db.get('SELECT * FROM projects WHERE id = ?', [result.lastID]);
-    res.status(201).json(project);
+    const data = loadDB();
+    
+    const newProject = {
+      id: getNextId(data, 'projects'),
+      name,
+      budget: parseFloat(budget) || 0,
+      status: status || 'Planning',
+      spent: 0,
+      progress_percent: 0,
+      start_date,
+      end_date: null,
+      created_at: new Date().toISOString()
+    };
+    
+    data.projects.push(newProject);
+    saveDB(data);
+    
+    res.status(201).json(newProject);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
 // DELETE project
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', (req, res) => {
   try {
     const { id } = req.params;
+    const data = loadDB();
     
-    // Check if project exists
-    const project = await req.db.get('SELECT * FROM projects WHERE id = ?', [id]);
-    if (!project) {
+    const projectIndex = data.projects.findIndex(p => p.id === parseInt(id));
+    if (projectIndex === -1) {
       return res.status(404).json({ error: 'Project not found' });
     }
     
-    await req.db.run('DELETE FROM projects WHERE id = ?', [id]);
+    data.projects.splice(projectIndex, 1);
+    saveDB(data);
+    
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ error: error.message });
