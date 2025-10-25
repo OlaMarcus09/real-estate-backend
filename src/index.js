@@ -6,26 +6,19 @@ import workerRoutes from './routes/workers.js';
 import vendorRoutes from './routes/vendors.js';
 
 const app = express();
+
+// Use Render's port or default to 5000
 const PORT = process.env.PORT || 5000;
 
-// CORS configuration for production
+// CORS configuration - allow all origins
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://real-estate-project-manager.vercel.app',
-    'https://*.vercel.app',
-    'https://*.onrender.com'
-  ],
-  credentials: true
+  origin: '*',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());
-
-// Add database to request object
-app.use((req, res, next) => {
-  req.db = { loadDB: () => require('./config/database.js').loadDB() };
-  next();
-});
 
 // Routes
 app.use('/api/projects', projectRoutes);
@@ -38,7 +31,8 @@ app.get('/api/health', (req, res) => {
     status: 'OK', 
     timestamp: new Date().toISOString(),
     database: 'JSON',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT
   });
 });
 
@@ -59,9 +53,12 @@ app.get('/', (req, res) => {
 
 // Initialize and start server
 console.log('🚀 Starting Real Estate Backend...');
+console.log('🔧 Environment:', process.env.NODE_ENV || 'development');
+console.log('🔧 Port:', PORT);
+
 initDB();
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Backend server running on port ${PORT}`);
-  console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`📊 Health: http://0.0.0.0:${PORT}/api/health`);
 });

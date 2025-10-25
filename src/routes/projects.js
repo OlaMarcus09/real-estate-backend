@@ -43,7 +43,7 @@ router.post('/', (req, res) => {
       status: status || 'Planning',
       spent: 0,
       progress_percent: 0,
-      start_date,
+      start_date: start_date || null,
       end_date: null,
       created_at: new Date().toISOString()
     };
